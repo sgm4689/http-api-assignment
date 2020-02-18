@@ -13,66 +13,88 @@
       //This will tell us what the server actually responded with.
       //Again, the server can ignore our requested types.
       const type = xhr.getResponseHeader('content-type');
-	  
-	  //grab the content section
-      const content = document.querySelector("#content");
-      
-        //removes all children
-    while (content.firstChild) {
-        content.removeChild(content.firstChild);
-    }
-        
-	  //create h1 and p to hold our response data for the page
-      const h1 = document.createElement('h1');
-      const p = document.createElement('p');
-      
-	  //if the response was in json
-      if(type === 'application/json') {
-		//parse the response text into a JSON object
-        const obj = JSON.parse(xhr.response);
-		//add the json fields to our html elements
-        h1.textContent = obj.id;
-        p.textContent = `Message: ${obj.message}`; 
-      } //if response was in xml
-      else if (type === 'text/xml') {
-		//grab the name tag and age tag from our responseXML
-		//This will only work if the responding XML is completely valid.
-		//Otherwise the responseXML field will be null
-        const name = xhr.responseXML.querySelector('name').textContent;
-        const age = xhr.responseXML.querySelector('age').textContent;
-		
-		//add the xml fields to our html elements
-        h1.textContent = `Name: ${name}`;
-        p.textContent = `Age: ${age}`; 
-      }
-      
-	  //append the h1 and p to the content.
-      content.appendChild(h1);
-      content.appendChild(p);
+        const status = xhr.status;
+
+        switch (status){
+            case 200:
+                header.innerHTML = 'Success';
+                break;
+            case 201:
+                header.innerHTML = 'Create';
+                break;
+            case 204:
+                header.innerHTML = 'Updated (No Content)';
+                response.innerHTML = "";//Clear out response
+                break;
+            case 400:
+                header.innerHTML = 'Bad Request';
+                break;
+            case 401:
+                header.innerHTML = 'Unauthorized';
+                break;
+            case 403:
+                header.innerHTML = 'Forbidden';
+                break;
+            case 404:
+                header.innerHTML = 'Resource not Found';
+                break;
+                //The next 2 cases aren't needed for assignment 2, but I saw no reason to remove them from the switch
+            case 500:
+                header.innerHTML = 'Internal Error';
+                break;
+            case 501:
+                header.innerHTML = 'Not Implemented';
+                break;
+            default:
+                header.innerHTML = 'Unknown Error';
+                break;
+        }
+        if (xhr.response){
+            const obj = JSON.parse(xhr.response);
+            response.innerHTML = JSON.stringify(obj);
+        }    
     };
     
     //function to send an xhr request
-    const sendAjax = (url, acceptedType) => {
+    const sendAjax = (request, url, data) => {
       //create a new xhr (ajax) request. 
       //Remember that these are ASYNCHRONOUS
       const xhr = new XMLHttpRequest();
       //set the xhr to a GET request to a certain URL
-      xhr.open('GET', url);
-      //Set the accept headers to the desired response mime type
-      //Server does NOT have to support this. It is a gentle request.
-      xhr.setRequestHeader ("Accept", acceptedType);
+      xhr.open(request, url);
+        if (request === 'GET' || request == 'POST'){
+            xhr.setRequestHeader ("Accept", 'application/json');
+        }
+
+        if (request === 'POST'){
+            xhr.setRequestHeader ("Content-Type", 'application/json');
+            xhr.send(data);
+        }
+        else xhr.send();
 
       //When the xhr loads, call handleResponse and pass the xhr object
       xhr.onload = () => handleResponse(xhr);
-      
-      //send our ajax request to the server
-      xhr.send();
     };   
 
      const init = () => {
-         send.onclick = () =>{
-             sendAjax(page.value, type.value);
-         }
+         addButton.onclick = (e) => {
+        e.preventDefault();
+
+        const userName = nameField.value;
+        const userAge = ageField.value;
+        
+        sendAjax('POST', '/addUser', JSON.stringify({ 'name': userName, 'age': userAge }));
+        
+        return false;
+      };
+      
+     sendButton.onclick = () => {
+        const URL = urlSelect.options[urlSelect.selectedIndex].value;
+        
+        const method = methodSelect.options[methodSelect.selectedIndex].value;
+        
+        sendAjax(method, URL);
+      };
      };
  
      window.onload = init;
@@ -81,23 +103,27 @@
 </head>
 <body>
   <section id="top">
-    <h3>Status Code Tests</h3>
-    <select id="page">
-      <option value="/success">Success</option>
-      <option value="/badRequest">Bad Request</option>
-      <option value="/unauthorized">Unauthorized</option>
-      <option value="/forbidden">Forbidden</option>
-      <option value="/internal">Internal</option>
-      <option value="/notImplemented">Not Implemented</option>
-      <option value="/notFound">Not Found</option>
-    </select>
-    <select id="type">
-      <option value="application/json">JSON</option>
-      <option value="text/xml">XML</option>
-    </select>
-    <button id="send">Send</button>
+    <h3>POST Status Code Tests</h3>
+    <form id="nameForm" method="post">
+      <label for="name">Name: </label>
+      <input id="nameField" type="text" name="name" />
+      <label for="age">Age: </label>
+      <input id="ageField" type="number" name="age" min="0" max="100" step="1"/>
+      <button id="addButton">Add User</button>
+    </form>
+      <select id='urlSelect'>
+        <option value='/getUsers'>/getUsers</option>
+        <option value='/notReal'>/notReal</option>
+      </select>
+      <select id="methodSelect">
+        <option value="get">GET</option>
+        <option value="head">HEAD</option>
+      </select>
+      <button id="sendButton">Send</button>
   </section>
   <section id="content">
+      <h1 id='header'></h1>
+      <p id=response></p>
   </section>
 </body>
 </html>

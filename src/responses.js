@@ -3,98 +3,86 @@ const fs = require('fs'); // pull in the file system module
 const css = fs.readFileSync(`${__dirname}/../client/style.css`);
 const index = fs.readFileSync(`${__dirname}/../client/client.html`);
 
+const users = {};
+
 // function to send response
-const respond = (request, response, content, type, status, header, acceptedTypes) => {
-
-if (acceptedTypes[0] === 'text/xml') {
-    // create a valid XML string with name and age tags.
-    let responseXML = '<response>';
-    if (header.id);
-        responseXML += ` <id>${header.id}</id>`;
-    responseXML += ` <message>${header.message}</message>`;
-    responseXML += ` </response>`;
-
-    // return response passing out string and content type
-    return respond(request, response, responseXML, 'text/xml');
-  }
-    
- const stringMessage = JSON.stringify(header);
-
-    
-  response.writeHead(status, { 'Content-Type': type });
-  response.write(content);
-  response.end();
+const respondJSON = (request, response, status, content, object) => {
+     const stringMessage = JSON.stringify(object);//Convert JSON to string for transmission
+   if (request.method !=="HEAD" && content && object){//Checks to make sure data's supposed to be sent
+       response.writeHead(status, { 'Content-Type': content});
+       response.write(stringMessage);
+   }else{
+       response.writeHead(status);
+   }
+    response.end();
 };
 
 // function to handle the index page
-const getIndex = (request, response, acceptedTypes) => {
+const getIndex = (request, response) => {
   response.writeHead(200, { 'Content-Type': 'text/html' });
   response.write(index);
+  response.end();
+};
+
+
+// function to handle the style page
+const getCSS = (request, response, acceptedTypes) => {
   response.writeHead(200, { 'Content-Type': 'text/css' });
   response.write(css);
   response.end();
 };
 
-const getSuccess = (request, response, acceptedTypes) => {
-    const header = {
-        message: 'This is a successful response',
+const getUsers = (request, response) => {
+    respondJSON(request, response, 200, 'application/json', users)
+   
+}
+const addUser = (request, response) =>{
+      const body = [];
+
+  //If There's an error, move on
+  request.on('error', () => {
+    response.statusCode = 400;
+    response.end();
+  });
+
+  // Get Data
+  request.on('data', (chunk) => {
+    body.push(chunk);
+  });
+
+  request.on('end', () => {
+    const person = JSON.parse(Buffer.concat(body).toString());
+
+    //the person is missing a parameter.  Throw an error
+    if (!person.name || !person.age) {
+      respondJSON(request, response, 400, 'application/json', {
+        message: 'Name and age are both required.',
+        id: 'missingParams',
+      });
     }
-    respond(request, response, stringMessage, 'application/json', 200, header, acceptedTypes)
- 
-};
-
-const getBadRequest = (request, response, acceptedTypes) => {
-  const header = {
-    id: 'badRequest',
-      message: 'missing valid query parameter set to true'
-  };
-  respond(request, response, stringMessage, 'application/json', 200, header, acceptedTypes)
-};
-
-const getUnauthorized = (request, response, acceptedTypes) => {
-  const header = {
-    id: "unauthorized",
-    message: 'Missing loggedIn query parameter set to yes',
-  };
-  respond(request, response, stringMessage, 'application/json', 200, header, acceptedTypes)
-};
-
-const getForbidden = (request, response, acceptedTypes) => {
-  const header = {
-    id: "forbidden",
-    message: 'You do not have access to this content',
-  };
-  respond(request, response, stringMessage, 'application/json', 200, header, acceptedTypes)
-};
-
-const getInternalError = (request, response, acceptedTypes) => {
-  const header = {
-      id: "internalError",
-    message: 'Internal Server Error.  Something went wrong',
-  };
-  respond(request, response, stringMessage, 'application/json', 200, header, acceptedTypes)
-};
-
-const getNotImplemented = (request, response, acceptedTypes) => {
-  const header = {
-      id: "notImplemented",
-    message: 'A get request for this page has not been implemented yet.  Check again later for updated content',
-  };
-  respond(request, response, stringMessage, 'application/json', 200, header, acceptedTypes)
-};
+    else if (users[person.name]) {//If person exists
+      respondJSON(request, response, 204, null, null);
+    } else {
+      users[person.name] = { name: person.name, age: person.age };
+      respondJSON(request, response, 201, 'application/json', {
+        message: 'Created Successfully',
+      });
+    }
+  });
+}
 
 const getMissing = (request, response, acceptedTypes) => {
   const header = {
       id: "notFound",
     message: 'The page you are looking for was not found',
   };
-  respond(request, response, stringMessage, 'application/json', 200, header, acceptedTypes)
+  respondJSON(request, response, 404, 'application/json', header);
 };
 
-module.exports.getSuccess = getSuccess;
-module.exports.getBadRequest = getBadRequest;
-module.exports.getUnauthorized = getUnauthorized;
-module.exports.getForbidden = getForbidden;
-module.exports.getInternalError = getInternalError;
-module.exports.getNotImplemented = getNotImplemented;
-module.exports.getMissing = getMissing;
+module.exports = {
+  addUser,
+  getUsers,
+  getMissing,
+  getIndex,
+  getCSS
+};

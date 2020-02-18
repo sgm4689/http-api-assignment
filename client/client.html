@@ -51,7 +51,7 @@
         }
         if (xhr.response){
             const obj = JSON.parse(xhr.response);
-            response.innerHTML = JSON.stringify(obj);
+            response.innerHTML = "Message: " + obj.message;
         }    
     };
     

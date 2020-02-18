@@ -27,7 +27,7 @@ const getIndex = (request, response) => {
 
 
 //Gets the CSS
-const getCSS = (request, response, acceptedTypes) => {
+const getCSS = (request, response) => {
   response.writeHead(200, { 'Content-Type': 'text/css' });
   response.write(css);
   response.end();
@@ -72,7 +72,7 @@ const addUser = (request, response) =>{
   });
 }
 
-const getMissing = (request, response, acceptedTypes) => {
+const getMissing = (request, response) => {
   const header = {
       id: "notFound",
     message: 'The page you are looking for was not found',

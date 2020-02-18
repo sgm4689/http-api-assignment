@@ -2,9 +2,8 @@
 <html lang="en">
 <head>
   <title>Our simple HTTP server</title>
-  <link rel="stylesheet" type="text/css" href="/style.css">
+<link rel="stylesheet" type="text/css" href="/style.css">
   
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.34/browser.min.js"></script>
   <script>
 
     //function to handle xhr response
@@ -15,6 +14,7 @@
       const type = xhr.getResponseHeader('content-type');
         const status = xhr.status;
 
+        //Switch to handle various statuses
         switch (status){
             case 200:
                 header.innerHTML = 'Success';

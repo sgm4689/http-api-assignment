@@ -1,11 +1,12 @@
 const fs = require('fs'); // pull in the file system module
 
+//Loads CSS and homepage
 const css = fs.readFileSync(`${__dirname}/../client/style.css`);
 const index = fs.readFileSync(`${__dirname}/../client/client.html`);
 
 const users = {};
 
-// function to send response
+//sends info to homepage
 const respondJSON = (request, response, status, content, object) => {
      const stringMessage = JSON.stringify(object);//Convert JSON to string for transmission
    if (request.method !=="HEAD" && content && object){//Checks to make sure data's supposed to be sent
@@ -17,7 +18,7 @@ const respondJSON = (request, response, status, content, object) => {
     response.end();
 };
 
-// function to handle the index page
+//Gets the homepage
 const getIndex = (request, response) => {
   response.writeHead(200, { 'Content-Type': 'text/html' });
   response.write(index);
@@ -25,7 +26,7 @@ const getIndex = (request, response) => {
 };
 
 
-// function to handle the style page
+//Gets the CSS
 const getCSS = (request, response, acceptedTypes) => {
   response.writeHead(200, { 'Content-Type': 'text/css' });
   response.write(css);
